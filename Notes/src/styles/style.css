@@ -439,3 +439,7 @@ body {
     bottom: 1rem;
 }
 
+.saving {
+    position: absolute;
+    right: 5rem;
+}

@@ -14,6 +14,8 @@ interface PassedData {
 
 const Notes = ({ id, onSave }: PassedData) => {
     const [note, setNote] = useState<Note | null>(null);
+    const [displayTitle, setDisplayTitle] = useState<string>("Untitled Note");
+    const [isSaving, setIsSaving] = useState<boolean>(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
@@ -28,10 +30,11 @@ const Notes = ({ id, onSave }: PassedData) => {
             .then(response => {
                 const fetchedNote = response.data;
                 setNote({
-                    title: fetchedNote.title || "New Note",
+                    title: fetchedNote.title || "",
                     date_updated: fetchedNote.date_updated ? new Date(fetchedNote.date_updated) : new Date(),
                     content: fetchedNote.content || ""
                 });
+                setDisplayTitle(fetchedNote.title || "Untitled Note");
                 console.log("Fetched note:", fetchedNote);
             })
             .catch(error => {
@@ -50,24 +53,31 @@ const Notes = ({ id, onSave }: PassedData) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (note) {
+            const updatedNote = {
+                ...note,
+                title: note.title.trim() === "" ? "New Note" : note.title,
+                date_updated: new Date()
+            };
+
+            setIsSaving(true);
             axios.post(`${import.meta.env.VITE_API_URL}/update_note`, {
                 id,
-                title: note.title,
-                date_updated: new Date(),
-                content: note.content
+                title: updatedNote.title,
+                date_updated: updatedNote.date_updated,
+                content: updatedNote.content
             }, { withCredentials: true })
             .then(response => {
                 if (response.status === 200) {
                     console.log("Note updated");
-                    setNote({
-                        ...note,
-                        date_updated: new Date()
-                    });
+                    setNote(updatedNote);
+                    setDisplayTitle(updatedNote.title);
                     onSave(); // Call the callback to update the sidebar notes
+                    setTimeout(() => setIsSaving(false), 2000);
                 }
             })
             .catch(error => {
                 console.error(error);
+                setIsSaving(false);
             });
         }
     };
@@ -79,7 +89,7 @@ const Notes = ({ id, onSave }: PassedData) => {
     return (
         <div className="note">
             <div className="header">
-                <span className="title">{note?.title === "" || note?.title == null ? "New Note" : note?.title}</span>
+                <span className="title">{displayTitle}</span>
             </div>
             <div className="toolbar">
                 <span className="date">{note?.date_updated?.toLocaleString([], {
@@ -89,7 +99,9 @@ const Notes = ({ id, onSave }: PassedData) => {
                     hour: '2-digit',
                     minute: '2-digit'
                 })}</span>
+                {isSaving && <span className="saving">Saving...</span>}
                 <button onClick={submit} className="save">Save</button>
+
             </div>
 
             <div className="content">
@@ -97,7 +109,7 @@ const Notes = ({ id, onSave }: PassedData) => {
                     <input
                         className="main_title note_title"
                         name="title"
-                        value={note?.title === "" || note?.title == null ? "New Note" : note?.title}
+                        value={note?.title || ""}
                         onChange={(e) => setNote({ ...note, title: e.target.value } as Note)}
                         onKeyDown={handleKeyDown}
                     />
