@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import ContextMenu from './contextMenu';
 import { v4 as uuidv4 } from 'uuid';
 import SidebarNotes from "./sidebar_notes.tsx";
+import axios from "axios";
 
 interface Notebook {
     id: string;
@@ -14,18 +15,73 @@ const Sidebar = () => {
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, visible: boolean }>({ x: 0, y: 0, visible: false });
     const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
+    useEffect(() => {
+        axios.get(import.meta.env.VITE_API_URL + `/retrieve_notebook`, { withCredentials: true }).then(response => {
+            if (response.status === 200) {
+                setNotebooks(response.data.data);
+            }
+        }).catch(error => {
+            console.error(error);
+        });
+    }, []);
     const handleAddNotebook = () => {
         const newNotebook = { id: uuidv4(), title: 'New Notebook' };
-        setNotebooks([...notebooks, newNotebook]);
-        setTimeout(() => {
-            inputRefs.current[newNotebook.id]?.focus();
-            setActiveNotebook(newNotebook.id);
-        }, 0);
+
+        axios.post(import.meta.env.VITE_API_URL + `/create_notebook`, newNotebook, { withCredentials: true }).then(response => {
+            if (response.status === 200) {
+                console.log("Notebook created");
+                setNotebooks([...notebooks, newNotebook]);
+                setTimeout(() => {
+                    inputRefs.current[newNotebook.id]?.focus();
+                    setActiveNotebook(newNotebook.id);
+                }, 0);
+            }
+        }).catch(error => {
+            console.error(error);
+            return;
+        });
+    };
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (document.activeElement === inputRefs.current[activeNotebook!]) {
+            inputRefs.current[activeNotebook!]?.blur();
+            return; // Prevent double execution
+        }
+
+        let title = inputRefs.current[activeNotebook!]?.value.trim();
+
+        // Check if the title is empty and update accordingly
+        if (title === "" || title == null) {
+            title = "New Notebook";
+        }
+
+        axios.post(import.meta.env.VITE_API_URL + `/update_notebook`, { id: activeNotebook, title }, { withCredentials: true }).then(response => {
+            if (response.status === 200) {
+                console.log("Notebook updated");
+                setNotebooks(notebooks.map(notebook =>
+                    notebook.id === activeNotebook ? { ...notebook, title } : notebook
+                ));
+                // Blur the input field
+                inputRefs.current[activeNotebook!]?.blur();
+                }
+        }).catch(error => {
+            console.error(error);
+            return;
+        });
     };
 
     const handleDeleteNotebook = (id: string) => {
-        setNotebooks(notebooks.filter(notebook => notebook.id !== id));
-        setActiveNotebook(null);
+        axios.post(import.meta.env.VITE_API_URL + `/delete_notebook`, { id }, { withCredentials: true }).then(response => {
+            if (response.status === 200) {
+                console.log("Notebook deleted");
+                setNotebooks(notebooks.filter(notebook => notebook.id !== id));
+                setActiveNotebook(null);
+            }
+        }).catch(error => {
+            console.error(error);
+            return;
+        });
     };
 
     const handleNotebookClick = (id: string | null) => {
@@ -50,6 +106,12 @@ const Sidebar = () => {
         setContextMenu({ ...contextMenu, visible: false });
     };
 
+    const handleBlur = (id: string) => {
+        if (activeNotebook === id) {
+            handleSubmit(new Event('submit', {bubbles: true, cancelable: true}) as unknown as React.FormEvent);
+        }
+    }
+
     const contextMenuOptions = [
         { label: 'Delete', onClick: () => handleDeleteNotebook(activeNotebook!) },
         { label: 'Cancel', onClick: handleCloseContextMenu },
@@ -71,17 +133,25 @@ const Sidebar = () => {
                             onClick={() => handleNotebookClick(notebook.id)}
                             onContextMenu={(event) => handleRightClick(event, notebook.id)}
                             className={`grid-item notebook ${activeNotebook === notebook.id ? "active" : ""}`}>
-                            <form className="main_body">
+                            <form onSubmit={handleSubmit} className="main_body">
                                 <input
                                     className="main_text"
                                     type="text"
-                                    defaultValue={notebook.title}
+                                    value={notebook.title}
                                     ref={el => inputRefs.current[notebook.id] = el}
                                     onMouseDown={preventFocus}
                                     onDoubleClick={() => handleInputDoubleClick(notebook.id)}
+                                    onBlur={() => handleBlur(notebook.id)}
+                                    onChange={(e) => {
+                                        const newTitle = e.target.value;
+                                        setNotebooks(notebooks.map(n => n.id === notebook.id ? {
+                                            ...n,
+                                            title: newTitle
+                                        } : n));
+                                    }}
                                 />
                             </form>
-                            <span className="note_count">9</span>
+
                         </div>
                     ))}
                 </div>
@@ -98,7 +168,7 @@ const Sidebar = () => {
                     title="Delete notebook?"
                 />
             )}
-            {activeNotebook && <SidebarNotes/>}
+            {activeNotebook && <SidebarNotes notebook_id={activeNotebook}/>}
         </div>
     );
 };

@@ -1,44 +1,83 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import ContextMenu from "./contextMenu.tsx";
 import Notes from "./notes.tsx";
+import axios from "axios";
 
 type Note = {
     id: string;
     title: string;
-    date_created: Date;
-    date_updated: Date;
+    date_updated?: Date;
 };
 
-const SidebarNotes = () => {
+interface PassedData {
+    notebook_id: string;
+}
+
+const SidebarNotes = ({ notebook_id }: PassedData) => {
     const [activeNote, setActiveNote] = useState<string | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, visible: boolean }>({ x: 0, y: 0, visible: false });
     const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
+    const fetchNotes = () => {
+        if (notebook_id) {
+            axios.get(`${import.meta.env.VITE_API_URL}/retrieve_notes`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                params: {
+                    notebook_id: notebook_id
+                },
+                withCredentials: true
+            })
+            .then(response => {
+                setNotes(response.data.data);
+            })
+            .catch(error => {
+                setNotes([]);
+                console.error('Error fetching notes:', error);
+            });
+        }
+    };
+
+    useEffect(() => {
+        fetchNotes();
+    }, [notebook_id]);
+
     const handleAddNote = () => {
-        const newNote = { id: uuidv4(), title: 'New Note', date_created: new Date(), date_updated: new Date() };
-        setNotes([...notes, newNote]);
-        setTimeout(() => {
-            inputRefs.current[newNote.id]?.focus();
-            setActiveNote(newNote.id);
-        }, 0);
+        const newNote = { id: uuidv4(), title: 'New Note', notebook_id, date_updated: new Date() };
+
+        axios.post(`${import.meta.env.VITE_API_URL}/create_note`, newNote, { withCredentials: true }).then(response => {
+            if (response.status === 200) {
+                console.log("Note created");
+                setNotes([...notes, newNote]);
+                setTimeout(() => {
+                    inputRefs.current[newNote.id]?.focus();
+                    setActiveNote(newNote.id);
+                }, 0);
+            }
+        }).catch(error => {
+            console.error(error);
+            return;
+        });
     };
 
     const handleDeleteNote = (id: string) => {
-        setNotes(notes.filter(note => note.id !== id));
+        axios.post(`${import.meta.env.VITE_API_URL}/delete_note`, { id }, { withCredentials: true }).then(response => {
+            if (response.status === 200) {
+                console.log("Note deleted");
+                setNotes(notes.filter(note => note.id !== id));
+                setActiveNote(null);
+            }
+        }).catch(error => {
+            console.error(error);
+            return;
+        });
     };
 
     const handleNoteClick = (id: string | null) => {
         setActiveNote(id);
-    };
-
-    const handleInputDoubleClick = (id: string) => {
-        inputRefs.current[id]?.focus();
-    };
-
-    const preventFocus = (event: React.MouseEvent<HTMLInputElement>) => {
-        event.preventDefault();
     };
 
     const handleRightClick = (event: React.MouseEvent, id: string) => {
@@ -56,6 +95,10 @@ const SidebarNotes = () => {
         { label: 'Cancel', onClick: handleCloseContextMenu },
     ];
 
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+    };
+
     return (
         <div className="sidebar_notes">
             <div className="controls">
@@ -70,14 +113,12 @@ const SidebarNotes = () => {
                         onClick={() => handleNoteClick(note.id)}
                         onContextMenu={(event) => handleRightClick(event, note.id)}
                         className={`grid-item notebook ${activeNote === note.id ? "active" : ""}`}>
-                        <form className="main_body">
+                        <form onSubmit={handleSubmit} className="main_body">
                             <input
                                 className="main_text"
                                 type="text"
-                                defaultValue={note.title}
-                                ref={el => inputRefs.current[note.id] = el}
-                                onMouseDown={preventFocus}
-                                onDoubleClick={() => handleInputDoubleClick(note.id)}
+                                value={note.title}
+                                readOnly={true}
                             />
                         </form>
                     </div>
@@ -93,7 +134,7 @@ const SidebarNotes = () => {
                     title="Delete note?"
                 />
             )}
-            {activeNote && <Notes id={activeNote} title={notes.find(note => note.id === activeNote)?.title} date_updated={notes.find(note => note.id === activeNote)?.date_updated} />}
+            {activeNote && <Notes id={activeNote} onSave={fetchNotes} />}
         </div>
     );
 };

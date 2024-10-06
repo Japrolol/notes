@@ -22,7 +22,7 @@ const Login = () => {
                     </div>
                 <button type="submit">Login</button>
             </form>
-            <p>Don't have an account? <a href="https://timecue.eu/accountlogin.php?type=register">Sign up</a></p>`
+            <p>Don't have an account? <a href="https://server798294.nazwa.pl/timecue/accountlogin.php?type=register">Sign up</a></p>`
         </div>
     )
 }

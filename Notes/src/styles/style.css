@@ -298,12 +298,17 @@ body {
 .note .header .title {
     font-size: 1.6rem;
     font-weight: bold;
+    height: 2rem;
     color: var(--text-color);
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
 }
 .note .toolbar {
     display: flex;
     height: 2.5rem;
     padding: 0.4rem 1rem;
+    align-items: center;
     width: calc(100vw - 34rem);
     position: fixed;
     margin-left: 1rem;
@@ -350,6 +355,9 @@ body {
     color: var(--text-color-contrast);
     border-radius: 0.2rem;
     transition: var(--transition-fast);
+}
+.note_title {
+    width: calc(100vw - 34rem) !important;
 }
 
 .login {
@@ -430,3 +438,4 @@ body {
     right: 1rem;
     bottom: 1rem;
 }
+
