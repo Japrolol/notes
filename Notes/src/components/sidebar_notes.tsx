@@ -17,6 +17,7 @@ interface PassedData {
 const SidebarNotes = ({ notebook_id }: PassedData) => {
     const [activeNote, setActiveNote] = useState<string | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, visible: boolean }>({ x: 0, y: 0, visible: false });
     const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
@@ -99,15 +100,22 @@ const SidebarNotes = ({ notebook_id }: PassedData) => {
         e.preventDefault();
     };
 
+    const filteredNotes = notes.filter(note => note.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
     return (
         <div className="sidebar_notes">
             <div className="controls">
                 <button onClick={handleAddNote}><i className="bx bx-plus"></i>New note</button>
-                <input type="search" placeholder="Search..." />
+                <input
+                    type="search"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
             </div>
 
             <div className="notebook-grid">
-                {notes.map((note) => (
+                {filteredNotes.map((note) => (
                     <div
                         key={note.id}
                         onClick={() => handleNoteClick(note.id)}
