@@ -1,25 +1,51 @@
 # Notes
 
--- aby odpalić wymagany jest pobrany python na komputerze oraz node.js.
--- utworzyc bazę danych za pomocą pliku notes.sql. Utworzone jest już tam domyślne konto o emailu admin@gmail.com i haśle admin123
--- Domyślne konto spowodowane jest tym, że mam już na serwerze taką samą bazę danych, lecz rejestracja odbywa się poprzez moją strone, co nie bedzię możliwe w przypadku lokalnej bazy
+Aby uruchomić ten projekt, musisz mieć zainstalowane Python i Node.js na swoim komputerze.
 
--- Po utworzeniu bazy należy w root-folderze utworzyć plik .env z polami:
--- DB_HOST=w przypadku lokalnej bazy localhost
--- DB_USER=uzytkownik bazy
--- DB_PORT=3306
--- DB_NAME=nazwa bazy danych
--- DB_PASSWORD=puste
--- SECRET_KEY=cokolwiek tu wpisac
+1. **Utwórz bazę danych**:
+   - Użyj pliku `notes.sql` do utworzenia bazy danych.
+   - Domyślne konto z emailem `admin@gmail.com` i hasłem `admin123` jest już utworzone.
+   - Domyślne konto jest konieczne, ponieważ proces rejestracji odbywa się przez moją stronę, co nie będzie możliwe w przypadku lokalnej bazy danych.
 
--- Następnie w folderze Notes należy utworzyć kolejny plik .env z polem:
--- VITE_API_URL="http://localhost:8000/api"
+2. **Utwórz pliki środowiskowe**:
+   - W folderze głównym utwórz plik `.env` z następującymi polami:
+     ```
+     DB_HOST=localhost  # W przypadku lokalnej bazy danych
+     DB_USER=uzytkownik_bazy
+     DB_PORT=3306
+     DB_NAME=nazwa_bazy_danych
+     DB_PASSWORD=  # Pozostaw puste, jeśli brak hasła
+     SECRET_KEY=twoj_sekret_klucz
+     ```
+   - W folderze `Notes` utwórz kolejny plik `.env` z następującym polem:
+     ```
+     VITE_API_URL="http://localhost:8000/api"
+     ```
 
--- Teraz w terminalu należy wpisać pip install -r requirements.txt
--- Po pobraniu wymaganych modułów należy wejść do folderu Notes --> cd Notes 
--- W folderze Notes należy wpisać npm i
+3. **Zainstaluj zależności**:
+   - W terminalu uruchom:
+     ```bash
+     pip install -r requirements.txt
+     ```
+   - Po zainstalowaniu wymaganych modułów, przejdź do folderu `Notes`:
+     ```bash
+     cd Notes
+     ```
+   - W folderze `Notes` uruchom:
+     ```bash
+     npm install
+     ```
 
--- Po wymaganych przygotowaniach trzeba w folderze notes do terminalu wpisać: npm run dev
--- Następnie w root-folderze w nowym okienku terminalu wpisać: python server.py 
--- Teraz wystarczy wejść w strone http://localhost:5173 i tylko się zalogować za pomocą admina.
+4. **Uruchom projekt**:
+   - W folderze `Notes` uruchom serwer deweloperski:
+     ```bash
+     npm run dev
+     ```
+   - W nowym oknie terminala, w folderze głównym, uruchom:
+     ```bash
+     python server.py
+     ```
 
+5. **Uzyskaj dostęp do aplikacji**:
+   - Otwórz przeglądarkę i przejdź do [http://localhost:5173](http://localhost:5173).
+   - Zaloguj się używając domyślnego konta administratora.
